@@ -20,32 +20,53 @@ damages = ['Damages not recorded', '100M', 'Damages not recorded', '40M', '27.9M
 deaths = [90,4000,16,3103,179,184,408,682,5,1023,43,319,688,259,37,11,2068,269,318,107,65,19325,51,124,17,1836,125,87,45,133,603,138,3057,74]
 
 # write your update damages function here:
-def parsed_damages():
+def update_damages():
     ret=[];
     for i in range(len(damages)):
         dmg=damages[i];
         toAppend=dmg;#default appending value to a returned list        
-        modifier=dmg[-1];#here we are expecting to have B or M or d        
-        premodifier=dmg[:-1];#expecting to find here a float a string
+        modifier=dmg[-1];#here we are expecting to have B or M or d (for the string "Damages not recorded")
+        premodifier=dmg[:-1];#expecting to find here a float a string (for the case "Damages not recorded")
         if(premodifier.replace('.','',1).isdigit()):  
             #checking that we've found a float, credits to https://www.geeksforgeeks.org/python-check-for-float-string/            
+            multiplier="";
             if(modifier == "M"):
                 #Millions modifier
-                toAppend=float(premodifier)*1E6;
+                multiplier=1E6;                
             elif(modifier == "B"):   
-                #Billions modifier                
-                toAppend=float(premodifier)*1E9;                                              
+                #Billions modifier   
+                multiplier=1E9;                
+            if(multiplier != ""):
+                toAppend=int(float(premodifier)*multiplier);
         ret.append(toAppend);
     return ret;
     
 
 
-
-
-
-
 # write your construct hurricane dictionary function here:
+def construct_hurricane(damages):
 
+    #damages is a list returned by update_damages function
+    ret={};#we are returning a dictionary which values are another dictionaries
+    keys=names; #these are keys of a first level of the returning dictionaries
+    values={
+            #every key of this dictionary becomes returning dictionary's innerKey
+            #dictionary key. The values of this dictionary are lists which have
+            #length equel to len(names).             
+            "Name":names, "Month":months, "Year":years, 
+            "Max sustained wind":max_sustained_winds, 
+            "Areas affected":areas_affected, 
+            "Deaths":deaths,
+            "Damage":damages
+        };
+             
+    for i in range(len(names)):#in this loop we are building returning dictionary
+        outerKey=names[i];#this is the first level key of the returning dictionary
+        ret[outerKey]={};
+        for innerKey in values.keys():
+            value=values[innerKey][i];#we can use indexing because every list has the same length            
+            ret[outerKey][innerKey]=value;    
+    return ret;
 
 
 
@@ -53,7 +74,15 @@ def parsed_damages():
 
 
 # write your construct hurricane by year dictionary function here:
-
+def construct_hurricane_by_year(hurricanes):
+    #huricanes is a dictionary returned by construct_hurricane() function
+    ret={};
+    for key in hurricanes.keys():
+        year=hurricanes[key]["Year"];
+        if(year not in ret):
+            ret[year]=[];#there could be more then 1 hurricane in one year, so we need a list for each year
+        ret[year].append(hurricanes[key]);
+    return ret;
 
 
 
@@ -61,46 +90,163 @@ def parsed_damages():
 
 
 # write your count affected areas function here:
-
-
+def get_affected_areas():
+    #list areas_affected contains other lists, though we need to 
+    #have two loops to traverse each element
+    ret={};
+    for i in range(len(areas_affected)):        
+        areas=areas_affected[i];#inner lists inside areas_affected list
+        for area in areas:#every area inside the inner list
+            if(area not in ret):#counting how many times we've found every area
+                ret[area]=1;
+            else:
+                ret[area]+=1;        
+    return ret;
 
 
 
 
 
 # write your find most affected area function here:
+def get_most_affected_area(affectedAreas):
 
-
+    #expected affectedAreas be a returned dictionaty of get_affected_areas
+    #function
+    mostAffectedArea="";
+    mostTimesHit=0;
+    
+    for (area,count) in affectedAreas.items():
+        if(count > mostTimesHit):
+            mostTimesHit=count;
+            mostAffectedArea=area;
+    
+    return (mostAffectedArea,mostTimesHit);
 
 
 
 
 
 # write your greatest number of deaths function here:
+def get_greatest_number_of_deaths():
+
+    data=zip(names,deaths);
+    greatestName="";#the name of the hurricane that caused greatest numbe of deaths
+    greatestToll=0;#greatest number of death caused by a hurricane
+    
+    for(name,toll) in data:
+        if(toll > greatestToll):
+            greatestToll=toll;
+            greatestName=name;
+            
+    return (greatestName,greatestToll);
 
 
 
-
-
+#give a hurricane a rating based of number of deathes it caused
+def get_hurricane_mortality_rating(num_deaths):
+    
+    ret=0;
+    if(num_deaths > 0 and num_deaths <= 100):
+        ret=1;
+    elif(num_deaths > 100 and num_deaths <= 500):
+        ret=2;
+    elif(num_deaths > 500 and num_deaths <= 1000):
+        ret=3;
+    elif(num_deaths > 1000 and num_deaths <= 5000):
+        ret=4;
+    elif(num_deaths > 5000):
+        ret=5;
+    elif(num_deaths < 0):
+        #should not reach this
+        print("num_deaths is negive:{num}".format(num=num_deaths));
+        
+    return ret;
+    
+def get_hurricane_damage_rating(damage): 
+    ret=0;
+    if(str(damage).isnumeric()):
+        #damage can be if form of a string "Damages not recorded". 
+        #isnumeric only checks for numbers, not for dot (".") signs 
+        #but its ok, because inside function update_damages we've 
+        #converted damage to an integer value so not dots should be present
+        if(damage > 0 and damage <= 100000000):
+            ret=1;
+        elif(damage > 100000000 and damage <= 1000000000):
+            ret=2;
+        elif(damage > 1000000000 and damage <= 10000000000):
+            ret=3;
+        elif(damage > 10000000000 and damage <= 50000000000):
+            ret=4;
+        elif(damage > 50000000000):
+            ret=5;
+        elif(damage < 0):
+            #should not reach this
+            print("damage is negive:{num}".format(num=damage));
+    else:
+        #if damage presented by string Damages not recorded then we return just this string
+        ret=damage;
+    return ret;
+        
+        
 
 
 # write your catgeorize by mortality function here:
-
-
-
-
+def get_hurricanes_categorized_by_deathes(hurricanes):    
+    #huricanes is a dictionary returned by construct_hurricane() function
+    ret={};
+    for key in hurricanes.keys():
+        rating=get_hurricane_mortality_rating(hurricanes[key]["Deaths"]);
+        if(rating not in ret):
+            ret[rating]=[];#there could be several huricanes having same rating so we need a list to account them all
+        ret[rating].append(hurricanes[key]);        
+    return ret;
 
 
 
 # write your greatest damage function here:
-
-
-
-
-
+def get_greatest_damage(huricanes):
+    #huricanes is a dictionary returned by construct_hurricane() function
+    greatestName="";
+    greatestDamage=0;
+    for key in hurricanes.keys():       
+        damage=hurricanes[key]["Damage"];        
+        if(str(damage).isnumeric() and int(damage) > greatestDamage): #some damage is stored as "Damages not recorded" string
+            greatestName=key;
+            greatestDamage=damage;
+            
+    return (greatestName,greatestDamage);
 
 
 # write your catgeorize by damage function here:
+def get_hurricanes_categorized_by_damage(hurricanes):    
+    #huricanes is a dictionary returned by construct_hurricane() function
+    ret={};
+    for key in hurricanes.keys():
+        rating=get_hurricane_damage_rating(hurricanes[key]["Damage"]);
+        if(rating not in ret):
+            ret[rating]=[];#there could be several huricanes having same rating so we need a list to account them all
+        ret[rating].append(hurricanes[key]);        
+    return ret;
 
 
-print(parsed_damages());
+
+
+updated_damages=update_damages();
+hurricanes=construct_hurricane(updated_damages);
+hurricanes_by_year=construct_hurricane_by_year(hurricanes);
+affected_areas=get_affected_areas();
+(mostAffectedArea,mostTimesHit)=get_most_affected_area(affected_areas);
+(greatestDeathName,greatestToll)=get_greatest_number_of_deaths();
+hurricanes_categorized_by_deathes=get_hurricanes_categorized_by_deathes(hurricanes);
+(greatestDamageName,greatestDamage)=get_greatest_damage(hurricanes);
+hurricanes_categorized_by_damage=get_hurricanes_categorized_by_damage(hurricanes);
+#print(affected_areas);
+#print("Area {area} is most affected by hurricanes. It was hit {times} times".format(area=mostAffectedArea,times=mostTimesHit));
+#print(updated_damages);
+#print(hurricanes);
+#print("Greates number of death were caused by the hurricane {Name}; It caused {Number} deathes".format(Name=greatestDeathName,Number=greatestToll));
+#print(hurricanes_categorized_by_deathes);
+#print("Greates recorded damage was caused by the hurricane {Name}; Its damage was {Damage} dollars".format(Name=greatestDamageName,Damage=greatestDamage));
+#print(hurricanes_categorized_by_damage);
+
+
